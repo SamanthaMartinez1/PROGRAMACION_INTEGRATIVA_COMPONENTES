@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Proyecto Dashboard con Web Components</title>
+
+  <!-- ESTILOS GENERALES DEL DASHBOARD-->
+  <style>
+    :root {
+      /* Variables globales de color para mantener coherencia visual */
+      --border: #e5e7eb;
+      --bg: #f9fafb;
+      --shadow: rgba(0,0,0,0.05);
+      --primary: #1f2937;
+      --accent: #2563eb;
+      --text: #111827;
+    }
+
+    /* Estilo base del documento */
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 1rem;
+    }
+
+    /* Título principal */
+    h1 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      margin-bottom: 0.2rem;
+    }
+
+    /* Subtítulos o secciones */
+    h2 {
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin-top: 0;
+    }
+
+    /* Texto secundario o descriptivo */
+    .small {
+      color: #6b7280;
+      font-size: 0.9rem;
+      margin-bottom: 1.5rem;
+    }
+
+    /* Estructura en cuadrícula (2 columnas) */
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr; /* mitad-mitad */
+      gap: 1.5rem;
+    }
+
+    /* Tarjetas visuales para cada sección */
+    .card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      box-shadow: 0 2px 5px var(--shadow);
+      padding: 1rem;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ENCABEZADO PRINCIPAL DEL PROYECTO-->
+  <h1>Proyecto Dashboard con Web Components</h1>
+  <p class="small">
+    Custom Elements • Shadow DOM • ES Modules • HTML Templates • LocalStorage • Cámara
+  </p>
+
+  <!-- 
+       ESTRUCTURA PRINCIPAL DEL DASHBOARD (dos columnas)
+        Columna izquierda: información del usuario (<user-card>)
+        Columna derecha: gestión de tareas (<task-item>)
+  -->
+  <div class="grid">
+
+    <!-- COLUMNA IZQUIERDA — PERFIL DE USUARIO-->
+    <div class="card">
+      <h2>Perfil de Usuario</h2>
+
+      <!-- Selector de perfiles y botón para crear uno nuevo -->
+      <div class="row" style="display:flex; gap:.5rem; align-items:center; margin:.5rem 0;">
+        <select id="sel-user" style="flex:1; padding:.35rem; border:1px solid var(--border); border-radius:8px"></select>
+        <button id="btn-new-user" title="Crear y seleccionar un nuevo perfil">Nuevo</button>
+      </div>
+
+      <!-- Componente personalizado: tarjeta del usuario activo -->
+      <user-card></user-card>
+
+      <!-- Sección de progreso global -->
+      <h3>Progreso de Tareas</h3>
+      <progress-bar></progress-bar>
+    </div>
+
+    <!-- COLUMNA DERECHA — GESTIÓN DE TAREAS -->
+    <div class="card">
+      <h2>Tareas</h2>
+      <p class="small">
+        Marca las tareas completadas para ver cómo cambia el progreso.
+      </p>
+
+      <!-- Contenedor dinámico donde se pintan los <task-item> -->
+      <div id="task-list"></div>
+
+      <!-- Formulario simple para agregar nuevas tareas -->
+      <div style="display:flex; gap:.3rem; margin-top:.5rem;">
+        <input id="new-task" placeholder="Nueva tarea..." style="flex:1; padding:.3rem;">
+        <button id="btn-add">Agregar</button>
+      </div>
+    </div>
+  </div>
+
+  <!--
+       TEMPLATES HTML (estructuras internas de los componentes)
+        Cada template define el HTML y el CSS que se insertará
+         dentro del Shadow DOM del Custom Element correspondiente.
+  -->
+
+  <!--  Template del componente <user-card>-->
+  <template id="tpl-user-card">
+    <style>
+      .container {
+        display: flex;
+        flex-direction: column;
+        gap: .5rem;
+        align-items: center;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 1rem;
+        background: var(--bg);
+      }
+      .avatar {
+        width: 96px; height: 96px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid var(--border);
+        background: #f3f4f6;
+      }
+      .row {
+        display: flex;
+        justify-content: space-between;
+        width: 100%;
+        gap: .5rem;
+        align-items: center;
+      }
+      button {
+        background: var(--primary);
+        color: white;
+        border: none;
+        padding: .3rem .8rem;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+      button:hover { background: var(--accent); }
+      video, canvas {
+        width: 100%;
+        border-radius: 10px;
+        display: none;
+      }
+      small { color:#6b7280; }
+    </style>
+
+    <!-- Estructura visual del componente -->
+    <div class="container">
+      <img class="avatar" alt="foto de perfil">
+      <div class="row">
+        <label>Nombre</label>
+        <input class="inp-nombre" placeholder="Nombre..." />
+        <label>Fecha de nacimiento</label>
+        <input type="date" class="inp-fecha" />
+      </div>
+
+      <div class="row">
+        <button class="btn-camara">Abrir cámara</button>
+        <button class="btn-capturar">Capturar foto</button>
+        <button class="btn-guardar">Guardar perfil</button>
+      </div>
+
+      <video class="cam" autoplay playsinline></video>
+      <canvas class="lienzo" width="256" height="256"></canvas>
+      <small class="status"></small>
+    </div>
+  </template>
+
+  <!--  Template del componente <task-item>-->
+  <template id="tpl-task-item">
+    <style>
+      .row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: .3rem .2rem;
+        border-bottom: 1px solid var(--border);
+      }
+      .title {
+        flex: 1;
+        margin-left: .5rem;
+      }
+      .btn-borrar {
+        background: #f87171;
+        border: none;
+        color: white;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+      .btn-borrar:hover { background: #dc2626; }
+    </style>
+
+    <!-- Cada tarea incluye checkbox + texto + botón borrar -->
+    <div class="row">
+      <input type="checkbox" class="chk">
+      <span class="title"></span>
+      <button class="btn-borrar">Borrar</button>
+    </div>
+  </template>
+
+  <!-- Template del componente <progress-bar>-->
+  <template id="tpl-progress-bar">
+    <style>
+      .bar {
+        width: 100%;
+        height: 10px;
+        background: #e5e7eb;
+        border-radius: 10px;
+        overflow: hidden;
+      }
+      .fill {
+        height: 10px;
+        background: var(--accent);
+        width: 0%;
+        transition: width 0.3s;
+      }
+      .label {
+        font-size: 0.8rem;
+        color: #6b7280;
+        margin-top: .2rem;
+      }
+    </style>
+
+    <!-- Estructura del indicador de progreso -->
+    <div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="label">0% completado (0/0)</div>
+    </div>
+  </template>
+
+  <!-- IMPORTACIÓN DEL SCRIPT PRINCIPAL (ES MODULE)-->
+  <script type="module" src="./main.js"></script>
+</body>
+</html>
