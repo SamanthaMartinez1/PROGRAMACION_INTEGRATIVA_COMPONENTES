@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,7 +12,7 @@
       /* Variables globales de color para mantener coherencia visual */
       --border: #e5e7eb;
       --bg: #f9fafb;
-      --shadow: rgba(0,0,0,0.05);
+      --shadow: rgba(0, 0, 0, 0.05);
       --primary: #1f2937;
       --accent: #2563eb;
       --text: #111827;
@@ -50,7 +51,8 @@
     /* Estructura en cuadrícula (2 columnas) */
     .grid {
       display: grid;
-      grid-template-columns: 1fr 1fr; /* mitad-mitad */
+      grid-template-columns: 1fr 1fr;
+      /* mitad-mitad */
       gap: 1.5rem;
     }
 
@@ -66,6 +68,8 @@
 </head>
 
 <body>
+
+  
 
   <!-- ENCABEZADO PRINCIPAL DEL PROYECTO-->
   <h1>Proyecto Dashboard con Web Components</h1>
@@ -86,7 +90,8 @@
 
       <!-- Selector de perfiles y botón para crear uno nuevo -->
       <div class="row" style="display:flex; gap:.5rem; align-items:center; margin:.5rem 0;">
-        <select id="sel-user" style="flex:1; padding:.35rem; border:1px solid var(--border); border-radius:8px"></select>
+        <select id="sel-user"
+          style="flex:1; padding:.35rem; border:1px solid var(--border); border-radius:8px"></select>
         <button id="btn-new-user" title="Crear y seleccionar un nuevo perfil">Nuevo</button>
       </div>
 
@@ -100,13 +105,29 @@
 
     <!-- COLUMNA DERECHA — GESTIÓN DE TAREAS -->
     <div class="card">
-      <h2>Tareas</h2>
+      <h2>Proyectos</h2>
       <p class="small">
         Marca las tareas completadas para ver cómo cambia el progreso.
       </p>
 
+      <!-- Selector de proyecto -->
+      <div class="row" style="display:flex; gap:.5rem; align-items:center; margin:.5rem 0;">
+        <select id="sel-project"
+          style="flex:1; padding:.35rem; border:1px solid var(--border); border-radius:8px"></select>
+
+        <button id="btn-new-project" title="Crear y seleccionar un nuevo proyecto">Nuevo</button>
+        <button id="btn-edit-project" title="Editar nombre del proyecto">Editar</button>
+        <button id="btn-delete-project" title="Eliminar proyecto actual">Eliminar</button>
+      </div>
+
+
       <!-- Contenedor dinámico donde se pintan los <task-item> -->
       <div id="task-list"></div>
+
+
+
+
+
 
       <!-- Formulario simple para agregar nuevas tareas -->
       <div style="display:flex; gap:.3rem; margin-top:.5rem;">
@@ -135,13 +156,16 @@
         padding: 1rem;
         background: var(--bg);
       }
+
       .avatar {
-        width: 96px; height: 96px;
+        width: 96px;
+        height: 96px;
         border-radius: 50%;
         object-fit: cover;
         border: 2px solid var(--border);
         background: #f3f4f6;
       }
+
       .row {
         display: flex;
         justify-content: space-between;
@@ -149,6 +173,7 @@
         gap: .5rem;
         align-items: center;
       }
+
       button {
         background: var(--primary);
         color: white;
@@ -157,13 +182,21 @@
         border-radius: 5px;
         cursor: pointer;
       }
-      button:hover { background: var(--accent); }
-      video, canvas {
+
+      button:hover {
+        background: var(--accent);
+      }
+
+      video,
+      canvas {
         width: 100%;
         border-radius: 10px;
         display: none;
       }
-      small { color:#6b7280; }
+
+      small {
+        color: #6b7280;
+      }
     </style>
 
     <!-- Estructura visual del componente -->
@@ -198,10 +231,12 @@
         padding: .3rem .2rem;
         border-bottom: 1px solid var(--border);
       }
+
       .title {
         flex: 1;
         margin-left: .5rem;
       }
+
       .btn-borrar {
         background: #f87171;
         border: none;
@@ -209,7 +244,10 @@
         border-radius: 5px;
         cursor: pointer;
       }
-      .btn-borrar:hover { background: #dc2626; }
+
+      .btn-borrar:hover {
+        background: #dc2626;
+      }
     </style>
 
     <!-- Cada tarea incluye checkbox + texto + botón borrar -->
@@ -230,12 +268,14 @@
         border-radius: 10px;
         overflow: hidden;
       }
+
       .fill {
         height: 10px;
         background: var(--accent);
         width: 0%;
         transition: width 0.3s;
       }
+
       .label {
         font-size: 0.8rem;
         color: #6b7280;
@@ -245,12 +285,162 @@
 
     <!-- Estructura del indicador de progreso -->
     <div>
-      <div class="bar"><div class="fill"></div></div>
+      <div class="bar">
+        <div class="fill"></div>
+      </div>
       <div class="label">0% completado (0/0)</div>
     </div>
   </template>
 
+  <!-- Modal para crear nuevo proyecto -->
+  <div id="projectModal" class="modal">
+    <div class="modal-content">
+      <h3>Nuevo Proyecto</h3>
+      <p>Ingresa un nombre para tu nuevo proyecto:</p>
+      <input type="text" id="txtProjectName" placeholder="Ej. Sistema de tareas" />
+      <div class="actions">
+        <button id="btnCancelProject" class="btn-secondary">Cancelar</button>
+        <button id="btnSaveProject" class="btn-primary">Guardar</button>
+      </div>
+    </div>
+  </div>
+  <style>
+    .modal {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background-color: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+    }
+
+    .modal.show {
+      display: flex;
+    }
+
+    .modal-content {
+      background: white;
+      padding: 2rem;
+      border-radius: 1rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      width: 100%;
+      max-width: 400px;
+    }
+
+    .actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.5rem;
+      margin-top: 1rem;
+    }
+
+    .btn-primary,
+    .btn-secondary {
+      border: none;
+      border-radius: 8px;
+      padding: 0.5rem 1rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-primary {
+      background-color: #2563eb;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background-color: #1d4ed8;
+    }
+
+    .btn-secondary {
+      background-color: #f3f4f6;
+      color: #374151;
+    }
+
+    .btn-secondary:hover {
+      background-color: #e5e7eb;
+    }
+  </style>
+
+<!-- Modal para editar nombre de proyecto -->
+<div id="editProjectModal" class="modal">
+  <div class="modal-content">
+    <h3>Editar Proyecto</h3>
+    <p>Cambia el nombre del proyecto actual:</p>
+    <input type="text" id="txtEditProjectName" placeholder="Nuevo nombre del proyecto" />
+    <div class="actions">
+      <button id="btnCancelEdit" class="btn-secondary">Cancelar</button>
+      <button id="btnSaveEdit" class="btn-primary">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* === Estilos básicos del modal === */
+  .modal {
+    display: none;
+    position: fixed;
+    z-index: 9999;
+    left: 0; top: 0;
+    width: 100%; height: 100%;
+    background-color: rgba(0, 0, 0, 0.45);
+    justify-content: center;
+    align-items: center;
+  }
+
+  .modal.show {
+    display: flex;
+  }
+
+  .modal-content {
+    background: white;
+    border-radius: 10px;
+    padding: 1.5rem;
+    width: 300px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+    text-align: center;
+  }
+
+  .modal-content input {
+    width: 100%;
+    padding: 0.5rem;
+    margin: 1rem 0;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+  }
+
+  .actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+  }
+
+  .btn-primary {
+    background: #2563eb;
+    color: white;
+    border: none;
+    padding: 0.4rem 0.8rem;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+
+  .btn-secondary {
+    background: #e5e7eb;
+    border: none;
+    padding: 0.4rem 0.8rem;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+
+  .btn-primary:hover {
+    background: #1e40af;
+  }
+</style>
+
+
   <!-- IMPORTACIÓN DEL SCRIPT PRINCIPAL (ES MODULE)-->
   <script type="module" src="./main.js"></script>
 </body>
+
 </html>

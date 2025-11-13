@@ -18,15 +18,20 @@ class TaskItem extends HTMLElement {
 
   //  Atributos observados 
   // Estos son los atributos HTML que, si cambian, disparan attributeChangedCallback.
-  static get observedAttributes(){ 
-    return ['title','done','task-id']; 
+  static get observedAttributes() {
+    return ['title', 'done', 'task-id', 'project-id'];
   }
 
-  constructor(){
+  get projectId() {
+    return this.getAttribute('project-id') ?? '';
+  }
+
+
+  constructor() {
     super(); // Llama al constructor del HTMLElement base.
 
     // 1. Activamos el Shadow DOM para aislar el componente (CSS + estructura)
-    this.attachShadow({ mode:'open' });
+    this.attachShadow({ mode: 'open' });
 
     // 2. Clonamos el contenido del template desde index.html
     // <template id="tpl-task-item"> se define en el archivo principal.
@@ -44,9 +49,9 @@ class TaskItem extends HTMLElement {
     this._onDelete = this._onDelete.bind(this);
   }
 
-  
+
   // Ciclo de vida del componente (cuando se agrega al DOM)
-  connectedCallback(){
+  connectedCallback() {
     // Renderiza los valores iniciales
     this._render();
 
@@ -56,56 +61,52 @@ class TaskItem extends HTMLElement {
   }
 
   // Cuando el componente se elimina del DOM → limpiamos los listeners
-  disconnectedCallback(){
+  disconnectedCallback() {
     this.$chk.removeEventListener('change', this._onToggle);
     this.$btnDel.removeEventListener('click', this._onDelete);
   }
 
   // Si cambia alguno de los atributos observados, se vuelve a renderizar
-  attributeChangedCallback(){ 
-    this._render(); 
+  attributeChangedCallback() {
+    this._render();
   }
 
   // Getters convenientes para leer atributos como propiedades JS
-  get taskId(){ return this.getAttribute('task-id') ?? ''; }      // ID único
-  get done(){ return this.getAttribute('done') === 'true'; }      // Estado (boolean)
-  get title(){ return this.getAttribute('title') ?? ''; }         // Texto
+  get taskId() { return this.getAttribute('task-id') ?? ''; }      // ID único
+  get done() { return this.getAttribute('done') === 'true'; }      // Estado (boolean)
+  get title() { return this.getAttribute('title') ?? ''; }
+  get projectId() {
+    return this.getAttribute('project-id') ?? '';
+  }
+  // Texto
 
   // Método de renderizado
   // Actualiza el contenido visual del componente según sus atributos.
-  _render(){
+  _render() {
     this.$title.textContent = this.title;       // Muestra el título
     this.$chk.checked = this.done;              // Marca o desmarca el checkbox
     this.$chk.setAttribute('aria-checked', String(this.done)); // Accesibilidad
   }
 
   // Handler: cuando el usuario marca o desmarca una tarea
-  _onToggle(e){
-    const checked = !!e.currentTarget.checked; // true o false según el estado del checkbox
+ _onToggle(e) {
+  const checked = !!e.currentTarget.checked;
+  Store.toggleTask(this.taskId, checked); // ✅ solo pasamos los argumentos correctos
 
-    // Actualiza el estado de la tarea en el Store (LocalStorage)
-    Store.toggleTask(this.taskId, checked);
+  document.dispatchEvent(new CustomEvent('store:changed', {
+    detail: { source: 'task:toggle', id: this.taskId }
+  }));
+}
 
-    // Lanza un evento global 'store:changed' para que otros componentes (como
-    // <progress-bar>) sepan que deben actualizarse.
-    document.dispatchEvent(new CustomEvent('store:changed', { 
-      detail: { source:'task:toggle', id:this.taskId } 
-    }));
-  }
+_onDelete() {
+  Store.removeTask(this.taskId); // ✅ igual aquí
 
-  // Handler: cuando el usuario presiona el botón "Borrar"
-  _onDelete(){
-    // 1. Eliminamos la tarea del Store (LocalStorage)
-    Store.removeTask(this.taskId);
+  document.dispatchEvent(new CustomEvent('store:changed', {
+    detail: { source: 'task:remove', id: this.taskId }
+  }));
+}
 
-    // 2. Notificamos al sistema que el Store cambió
-    // Esto hará que main.js vuelva a renderizar la lista de tareas actualizada.
-    document.dispatchEvent(new CustomEvent('store:changed', { 
-      detail: { source:'task:remove', id:this.taskId } 
-    }));
 
-    // 3.El elemento será removido visualmente cuando main.js re-renderice
-  }
 }
 
 // Registro del Custom Element <task-item>

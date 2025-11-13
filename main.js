@@ -41,6 +41,102 @@ function renderUsers(){
 }
 renderUsers();
 
+const $selProject = document.getElementById('sel-project');
+const $btnNewProject = document.getElementById('btn-new-project');
+
+function renderProjects() {
+  $selProject.innerHTML = '';
+  for (const p of Store.listProjects()) {
+    const opt = document.createElement('option');
+    opt.value = p.id;
+    opt.textContent = p.name || '(Proyecto sin nombre)';
+    if (p.id === Store.state.activeProjectId) opt.selected = true;
+    $selProject.appendChild(opt);
+  }
+}
+renderProjects();
+
+// Cambiar proyecto activo
+$selProject.addEventListener('change', () => {
+  Store.setActiveProject($selProject.value);
+});
+
+// Crear nuevo proyecto
+// --- Modal de Nuevo Proyecto ---
+const projectModal = document.getElementById('projectModal');
+const txtProjectName = document.getElementById('txtProjectName');
+const btnCancelProject = document.getElementById('btnCancelProject');
+const btnSaveProject = document.getElementById('btnSaveProject');
+// Elementos del DOM
+
+const $btnEditProject = document.getElementById('btn-edit-project');
+const $btnDeleteProject = document.getElementById('btn-delete-project');
+
+
+$btnEditProject.addEventListener('click', () => {
+  const project = Store.getActiveProject();
+  if (!project) return alert('No hay proyecto activo.');
+
+  const nuevoNombre = prompt('Nuevo nombre del proyecto:', project.name);
+  if (nuevoNombre && nuevoNombre.trim() !== '') {
+    Store.renameProject(project.id, nuevoNombre.trim());
+    renderProjectList();
+  }
+});
+
+$btnDeleteProject.addEventListener('click', () => {
+  const project = Store.getActiveProject();
+  if (!project) return alert('No hay proyecto activo');
+
+  const ok = confirm(`¿Eliminar el proyecto "${project.name}"?`);
+  if (ok) {
+    Store.removeProject(project.id);
+    renderProjectList();
+    renderTasks();
+  }
+});
+
+// Abrir modal
+$btnNewProject.addEventListener('click', () => {
+  projectModal.classList.add('show');
+  txtProjectName.value = '';
+  txtProjectName.focus();
+});
+
+// Cerrar modal
+btnCancelProject.addEventListener('click', () => {
+  projectModal.classList.remove('show');
+  txtProjectName.value = '';
+});
+
+// Guardar nuevo proyecto
+btnSaveProject.addEventListener('click', () => {
+  const name = txtProjectName.value.trim();
+  if (!name) {
+    alert('Por favor ingresa un nombre para el proyecto.');
+    return;
+  }
+
+  Store.addProject({ name });
+  projectModal.classList.remove('show');
+  txtProjectName.value = '';
+});
+
+// Cerrar modal al presionar "Escape" o hacer clic fuera del cuadro
+window.addEventListener('keydown', e => {
+  if (e.key === 'Escape') projectModal.classList.remove('show');
+});
+projectModal.addEventListener('click', e => {
+  if (e.target === projectModal) projectModal.classList.remove('show');
+});
+
+
+// Escuchar cambios en los proyectos
+document.addEventListener('store:changed', (e) => {
+  const src = e?.detail?.source || '';
+  if (src.startsWith('project:')) renderProjects();
+});
+
 $selUser.addEventListener('change', () => {
   Store.setActiveUser($selUser.value); // cambia de persona → <user-card> se re-renderiza solo
 });
@@ -69,21 +165,27 @@ const $btnAdd   = document.getElementById('btn-add');   // botón "Agregar"
 //    Este render se invoca al arrancar y cada vez que cambia el Store.
 
 function renderTasks() {
-  // Limpiamos el contenedor previo
   $taskList.innerHTML = '';
 
-  // Obtenemos una copia de las tareas desde la API
-  const tasks = Store.getTasks(); // [{id,title,done}, ...]
+  // ✅ Obtenemos el proyecto activo
+  const projectId = Store.state.activeProjectId;
 
-  // Por cada tarea creamos un <task-item> y seteamos sus atributos
+  // ✅ Obtenemos solo las tareas de ese proyecto
+  const tasks = Store.getTasks(projectId);
+
   for (const t of tasks) {
     const el = document.createElement('task-item');
-    el.setAttribute('task-id', t.id);         // id único (string)
-    el.setAttribute('title', t.title);        // texto visible
-    el.setAttribute('done', String(!!t.done));// "true" o "false" (string)
+    el.setAttribute('task-id', t.id);
+    el.setAttribute('title', t.title);
+    el.setAttribute('done', String(!!t.done));
+
+    // ✅ Muy importante: asociar el projectId al componente
+    el.setAttribute('project-id', projectId);
+
     $taskList.appendChild(el);
   }
 }
+
 
 // Pintamos una primera vez
 renderTasks();
@@ -120,14 +222,17 @@ $newTask.addEventListener('keydown', (e) => {
 document.addEventListener('store:changed', (e) => {
   const src = e?.detail?.source || '';
 
-  // Solo re-render de la lista si cambia algo de tareas.
-  if (src.startsWith('task:')) {
+  // Cambios en tareas o proyectos → refrescar lista
+  if (src.startsWith('task:') || src.startsWith('project:')) {
     renderTasks();
   }
 
-  // Si cambió el user, no hace falta tocar la lista de tareas.
-  // <user-card> y <progress-bar> se auto-actualizan por su cuenta.
+  // Cambios en usuarios → refrescar combo
+  if (src.startsWith('user:')) {
+    renderUsers();
+  }
 });
+
 
 
 // 6. (Opcional) Exponer Store para debugging desde la consola del navegador.
